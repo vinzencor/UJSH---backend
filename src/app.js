@@ -28,13 +28,21 @@ app.use(helmet());
 app.use(
   cors({
     origin: (origin, callback) => {
+      const normalizeOrigin = (value) => String(value || "").trim().replace(/\/+$/, "");
+      const envOrigins = String(process.env.CLIENT_ORIGIN || "")
+        .split(",")
+        .map((value) => normalizeOrigin(value))
+        .filter(Boolean);
+
       const allowedOrigins = [
         "http://localhost:8080",
         "https://global-research-gateway-hub.vercel.app",
-        process.env.CLIENT_ORIGIN
-      ].filter(Boolean);
+        ...envOrigins,
+      ].map((value) => normalizeOrigin(value));
       
-      if (!origin || allowedOrigins.includes(origin)) {
+      const incomingOrigin = normalizeOrigin(origin);
+
+      if (!origin || allowedOrigins.includes(incomingOrigin)) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
@@ -69,7 +77,20 @@ app.use(
 );
 
 // ─── Health check ─────────────────────────────────────────────────────────────
-app.get("/api/health", (_req, res) => res.json({ success: true, message: "GRGH API running." }));
+app.get("/", (_req, res) =>
+  res.json({
+    success: true,
+    message: "UJSH backend is running.",
+    apiBase: "/api",
+    health: "/api/health",
+  })
+);
+
+app.get("/health", (_req, res) =>
+  res.json({ success: true, message: "UJSH backend is healthy." })
+);
+
+app.get("/api/health", (_req, res) => res.json({ success: true, message: "UJSH API running." }));
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
 app.use("/api/auth", authLimiter, authRoutes);

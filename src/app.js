@@ -35,7 +35,9 @@ app.use(
         .filter(Boolean);
 
       const allowedOrigins = [
+        "http://localhost:5173",
         "http://localhost:8080",
+        "https://ujsh-front-end.vercel.app",
         "https://global-research-gateway-hub.vercel.app",
         ...envOrigins,
       ].map((value) => normalizeOrigin(value));

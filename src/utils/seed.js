@@ -16,18 +16,31 @@ async function seed() {
   console.log("Connected to MongoDB");
 
   // ── Super Admin ──────────────────────────────────────────────────────────
-  const existingAdmin = await User.findOne({ email: "admin@ujsh.com" });
-  if (!existingAdmin) {
-    await User.create({
+  // Ensure super admin credentials are always available and up to date.
+  let adminUser = await User.findOne({ email: "admin@ujsh.com" }).select("+password");
+  if (!adminUser) {
+    adminUser = await User.findOne({ email: "admin@grgh.com" }).select("+password");
+  }
+
+  if (!adminUser) {
+    adminUser = await User.create({
       email: "admin@ujsh.com",
       password: "Admin@1234",
       fullName: "UJSH Super Admin",
       institution: "Universal Journal Submission Hub",
       roles: [ROLES.SUPER_ADMIN, ROLES.REGISTERED_USER],
+      isActive: true,
     });
     console.log("✅ Super admin created: admin@ujsh.com / Admin@1234");
   } else {
-    console.log("ℹ️  Super admin already exists");
+    adminUser.email = "admin@ujsh.com";
+    adminUser.password = "Admin@1234";
+    adminUser.fullName = "UJSH Super Admin";
+    adminUser.institution = "Universal Journal Submission Hub";
+    adminUser.isActive = true;
+    adminUser.roles = Array.from(new Set([...(adminUser.roles || []), ROLES.SUPER_ADMIN, ROLES.REGISTERED_USER]));
+    await adminUser.save();
+    console.log("✅ Super admin updated: admin@ujsh.com / Admin@1234");
   }
 
   // ── Membership Plans ─────────────────────────────────────────────────────
